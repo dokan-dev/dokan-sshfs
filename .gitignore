@@ -1,0 +1,15 @@
+bin
+obj
+Debug
+DebugPS
+Release
+ReleasePS
+*.user
+*.suo
+*.sdf
+*.aps
+*.ipch
+/DokanSSHFSControl/DokanSSHFSControl_i.c
+/DokanSSHFSControl/DokanSSHFSControl_p.c
+/DokanSSHProperty/DokanSSHProperty/DokanSSHProperty_i.c
+/DokanSSHProperty/DokanSSHProperty/DokanSSHProperty_p.c
