@@ -4,7 +4,6 @@
 #include "DokanSSHProperty.h"
 #include "SSHProperty.h"
 #include "DokanSSHPropertyModule.h"
-#include "..\..\..\dokan\dokanc.h"
 
 extern CDokanSSHPropertyModule _AtlModule;
 
@@ -15,7 +14,7 @@ CheckMount2(LPCWSTR FileName)
 {
 	std::wstring file = std::wstring(FileName) + L":SSHFSProperty.Permission";
 
-	DokanDbgPrintW(L"Check SSHFS file %s\n", file.c_str());
+	//DokanDbgPrintW(L"Check SSHFS file %s\n", file.c_str());
 
 	HANDLE handle = CreateFile(
 					file.c_str(),
@@ -80,7 +79,7 @@ OnInitDialog(HWND hwnd, LPARAM lParam)
 		DWORD readBytes = 0;
 		if (ReadFile(hFile, buffer, sizeof(buffer), &readBytes, NULL)) {
 			int p = atoi(buffer);
-			DokanDbgPrintW(L"%s, %d\n", file.c_str(), p);
+			//DokanDbgPrintW(L"%s, %d\n", file.c_str(), p);
 
 			
 			for(int i=0; i<3; ++i) {
@@ -238,8 +237,8 @@ OnApply(HWND hwnd, PSHNOTIFY* phdr)
 				changed = true;
 
 		buffer[3] = '\0';
-		DokanDbgPrint("SSHFSProperty: %s %s -> %s\n",
-			file.c_str(), buffer, newpermission);
+		//DokanDbgPrint("SSHFSProperty: %s %s -> %s\n",
+		//	file.c_str(), buffer, newpermission);
 
 		if (changed) {
 			hFile = CreateFile(
@@ -356,7 +355,7 @@ CSSHProperty::Initialize (
 		//	continue;
 
 		// Add the filename to our list o' files to act on.
-		DokanDbgPrintW(L"add %s\n", szFile);
+		//DokanDbgPrintW(L"add %s\n", szFile);
 		m_lsFiles.push_back(szFile);
 	}   // end for
 
@@ -372,7 +371,7 @@ CSSHProperty::Initialize (
 	// If we found any files we can work with, return S_OK.  Otherwise,
 	// return E_FAIL so we don't get called again for this right-click
 	// operation.
-	DokanDbgPrintW(mounted ? L"mounted\n" : L"not mounted\n");
+	//DokanDbgPrintW(mounted ? L"mounted\n" : L"not mounted\n");
 	return (m_lsFiles.size() > 0 && mounted) ? S_OK : E_FAIL;
 }
 
