@@ -12,7 +12,7 @@ This program requires following programs.
 - Dokan library (http://dokan-dev.net/en)
 - Dokan.NET (including)
 - SharpSSH (including)
-- Microsoft .NET Framework 3.5
+- Microsoft .NET Framework 4.0
 - Microsoft Visual C++ 2005 SP1 Redistributable Package
 (http://www.microsoft.com/downloads/details.aspx?FamilyID=200b2fd9-ae1a-4a14-984d-389c36f85647)
 
