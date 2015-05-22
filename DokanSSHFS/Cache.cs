@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Collections;
-using Dokan;
+using DokanNet;
+using System.Security.AccessControl;
 
 namespace DokanSSHFS
 {
@@ -11,12 +12,12 @@ namespace DokanSSHFS
         public string Name = null;
         public Dictionary<string, CacheEntry> Children = null;
 
-        public int CreateFileRet = int.MaxValue;
-        public int OpenDirectoryRet = int.MaxValue;
-        public int GetFileInfoRet = int.MaxValue;
-        public FileInformation GetFileInfoValue = null;
-        public int FindFilesRet = int.MaxValue;
-        public ArrayList FindFilesValue = null;
+        public DokanError CreateFileRet = DokanError.Undefined;
+        public DokanError OpenDirectoryRet = DokanError.Undefined;
+        public DokanError GetFileInfoRet = DokanError.Undefined;
+        public FileInformation GetFileInfoValue = new FileInformation();
+        public DokanError FindFilesRet = DokanError.Undefined;
+        public IList<FileInformation> FindFilesValue = null;
         public CacheEntry Parrent = null;
 
         public CacheEntry(string name)
@@ -54,24 +55,24 @@ namespace DokanSSHFS
 
         public void RemoveCreateFileCache()
         {
-            CreateFileRet = int.MaxValue;
+            CreateFileRet = DokanError.Undefined;
         }
 
         public void RemoveOpenDirectoryCache()
         {
-            OpenDirectoryRet = int.MaxValue;
+            OpenDirectoryRet = DokanError.Undefined;
         }
 
         public void RemoveGetFileInfoCache()
         {
-            GetFileInfoRet = int.MaxValue;
-            GetFileInfoValue = null;
+            GetFileInfoRet = DokanError.Undefined;
+            GetFileInfoValue = new FileInformation();
         }
 
         public void RemoveFindFilesCache()
         {
             System.Diagnostics.Debug.WriteLine("RemoveFindFilesCache " + Name);
-            FindFilesRet = int.MaxValue;
+            FindFilesRet = DokanError.Undefined;
             FindFilesValue = null;
             Children = null;
         }
@@ -88,22 +89,22 @@ namespace DokanSSHFS
 
 
 
-    class CacheOperations : DokanOperations
+    class CacheOperations : IDokanOperations
     {
-        DokanOperations ope_;
+        IDokanOperations ope_;
         CacheEntry cache_;
 
-        public CacheOperations(DokanOperations ope)
+        public CacheOperations(IDokanOperations ope)
         {
             ope_ = ope;
             cache_ = new CacheEntry(null);
         }
 
 
-        public int CreateFile(string filename, FileAccess access, FileShare share,
-            FileMode mode, FileOptions options, DokanFileInfo info)
+        public DokanError CreateFile(string filename, DokanNet.FileAccess access, FileShare share,
+            FileMode mode, FileOptions options, FileAttributes attributes, DokanFileInfo info)
         {
-            int ret = 0;
+            DokanError ret = DokanError.ErrorSuccess;
 
             if (filename.EndsWith(":SSHFSProperty.Cache"))
             {
@@ -112,7 +113,7 @@ namespace DokanSSHFS
                 filename = filename.Remove(filename.IndexOf(":SSHFSProperty.Cache"));
                 CacheEntry entry = cache_.Lookup(filename);
                 entry.RemoveAllCache();
-                return 0;
+                return DokanError.ErrorSuccess;
             }
 
             if (mode == FileMode.Open || mode == FileMode.OpenOrCreate)
@@ -125,9 +126,9 @@ namespace DokanSSHFS
                         entry.Parrent.RemoveFindFilesCache();
                 }
 
-                if (entry.CreateFileRet == int.MaxValue)
+                if (entry.CreateFileRet == DokanError.Undefined)
                 {
-                    ret = ope_.CreateFile(filename, access, share, mode, options, info);
+                    ret = ope_.CreateFile(filename, access, share, mode, options, attributes, info);
                     entry.CreateFileRet = ret;
                 }
                 else
@@ -137,7 +138,7 @@ namespace DokanSSHFS
             }
             else
             {
-                ret = ope_.CreateFile(filename, access, share, mode, options, info);
+                ret = ope_.CreateFile(filename, access, share, mode, options, attributes, info);
 
                 if (mode == FileMode.Create || mode == FileMode.CreateNew)
                 {
@@ -150,12 +151,12 @@ namespace DokanSSHFS
         }
 
 
-        public int OpenDirectory(string filename, DokanFileInfo info)
+        public DokanError OpenDirectory(string filename, DokanFileInfo info)
         {
-            int ret = 0;
+            DokanError ret = 0;
 
             CacheEntry entry = cache_.Lookup(filename);
-            if (entry.OpenDirectoryRet == int.MaxValue)
+            if (entry.OpenDirectoryRet == DokanError.Undefined)
             {
                 ret = ope_.OpenDirectory(filename, info);
                 entry.OpenDirectoryRet = ret;
@@ -167,7 +168,7 @@ namespace DokanSSHFS
             return ret;
         }
 
-        public int CreateDirectory(string filename, DokanFileInfo info)
+        public DokanError CreateDirectory(string filename, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
@@ -178,43 +179,43 @@ namespace DokanSSHFS
             return ope_.CreateDirectory(filename, info);
         }
 
-        public int Cleanup(string filename, DokanFileInfo info)
+        public DokanError Cleanup(string filename, DokanFileInfo info)
         {
             return ope_.Cleanup(filename, info);
         }
 
-        public int CloseFile(string filename, DokanFileInfo info)
+        public DokanError CloseFile(string filename, DokanFileInfo info)
         {
             return ope_.CloseFile(filename, info);
         }
 
-        public int ReadFile(string filename, byte[] buffer,
-            ref uint readBytes, long offset, DokanFileInfo info)
+        public DokanError ReadFile(string filename, byte[] buffer,
+            out int readBytes, long offset, DokanFileInfo info)
         {
-            return ope_.ReadFile(filename, buffer, ref readBytes, offset, info);
+            return ope_.ReadFile(filename, buffer, out readBytes, offset, info);
         }
 
-        public int WriteFile(string filename, byte[] buffer,
-            ref uint writtenBytes, long offset, DokanFileInfo info)
+        public DokanError WriteFile(string filename, byte[] buffer,
+            out int writtenBytes, long offset, DokanFileInfo info)
         {
-            return ope_.WriteFile(filename, buffer, ref writtenBytes, offset, info);
+            return ope_.WriteFile(filename, buffer, out writtenBytes, offset, info);
         }
 
-        public int FlushFileBuffers(string filename, DokanFileInfo info)
+        public DokanError FlushFileBuffers(string filename, DokanFileInfo info)
         {
             return ope_.FlushFileBuffers(filename, info);
         }
 
 
-        public int GetFileInformation(string filename, FileInformation fileinfo, DokanFileInfo info)
+        public DokanError GetFileInformation(string filename, out FileInformation fileinfo, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
-            int ret = 0;
+            DokanError ret = 0;
 
-            if (entry.GetFileInfoRet == int.MaxValue)
+            if (entry.GetFileInfoRet == DokanError.Undefined)
             {
-                ret = ope_.GetFileInformation(filename, fileinfo, info);
+                ret = ope_.GetFileInformation(filename, out fileinfo, info);
                 entry.GetFileInfoRet = ret;
                 entry.GetFileInfoValue = fileinfo;
             }
@@ -222,6 +223,7 @@ namespace DokanSSHFS
             {
                 FileInformation finfo = entry.GetFileInfoValue;
 
+                fileinfo = new FileInformation();
                 fileinfo.Attributes = finfo.Attributes;
                 fileinfo.CreationTime = finfo.CreationTime;
                 fileinfo.FileName = finfo.FileName;
@@ -236,22 +238,23 @@ namespace DokanSSHFS
         }
 
 
-        public int FindFiles(string filename, ArrayList files, DokanFileInfo info)
+        public DokanError FindFiles(string filename, out IList<FileInformation> files, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
-            int ret = 0;
+            DokanError ret = 0;
 
-            if (entry.FindFilesRet == int.MaxValue)
+            if (entry.FindFilesRet == DokanError.Undefined)
             {
-                ret = ope_.FindFiles(filename, files, info);
+                ret = ope_.FindFiles(filename, out files, info);
                 entry.FindFilesRet = ret;
                 entry.FindFilesValue = files;
             }
             else
             {
-                ArrayList cfiles = entry.FindFilesValue;
-                foreach (object e in cfiles)
+                files = new List<FileInformation>();
+                IList<FileInformation> cfiles = entry.FindFilesValue;
+                foreach (FileInformation e in cfiles)
                 {
                     files.Add(e);
                 }
@@ -261,7 +264,7 @@ namespace DokanSSHFS
             return ret;
         }
 
-        public int SetFileAttributes(string filename, FileAttributes attr, DokanFileInfo info)
+        public DokanError SetFileAttributes(string filename, FileAttributes attr, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
             entry.RemoveGetFileInfoCache();
@@ -269,7 +272,7 @@ namespace DokanSSHFS
             return ope_.SetFileAttributes(filename, attr, info);
         }
 
-        public int SetFileTime(string filename, DateTime? ctime, DateTime? atime,
+        public DokanError SetFileTime(string filename, DateTime? ctime, DateTime? atime,
             DateTime? mtime, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
@@ -278,7 +281,7 @@ namespace DokanSSHFS
             return ope_.SetFileTime(filename, ctime, atime, mtime, info);
         }
 
-        public int DeleteFile(string filename, DokanFileInfo info)
+        public DokanError DeleteFile(string filename, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
@@ -288,7 +291,7 @@ namespace DokanSSHFS
             return ope_.DeleteFile(filename, info);
         }
 
-        public int DeleteDirectory(string filename, DokanFileInfo info)
+        public DokanError DeleteDirectory(string filename, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
@@ -298,7 +301,7 @@ namespace DokanSSHFS
             return ope_.DeleteDirectory(filename, info);
         }
 
-        public int MoveFile(string filename, string newname, bool replace, DokanFileInfo info)
+        public DokanError MoveFile(string filename, string newname, bool replace, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
 
@@ -312,7 +315,7 @@ namespace DokanSSHFS
             return ope_.MoveFile(filename, newname, replace, info);
         }
 
-        public int SetEndOfFile(string filename, long length, DokanFileInfo info)
+        public DokanError SetEndOfFile(string filename, long length, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
             entry.RemoveGetFileInfoCache();
@@ -320,7 +323,7 @@ namespace DokanSSHFS
             return ope_.SetEndOfFile(filename, length, info);
         }
 
-        public int SetAllocationSize(string filename, long length, DokanFileInfo info)
+        public DokanError SetAllocationSize(string filename, long length, DokanFileInfo info)
         {
             CacheEntry entry = cache_.Lookup(filename);
             entry.RemoveGetFileInfoCache();
@@ -328,32 +331,45 @@ namespace DokanSSHFS
             return ope_.SetAllocationSize(filename, length, info);
         }
 
-        public int LockFile(string filename, long offset, long length, DokanFileInfo info)
+        public DokanError LockFile(string filename, long offset, long length, DokanFileInfo info)
         {
             return ope_.LockFile(filename, offset, length, info);
         }
 
-        public int UnlockFile(string filename, long offset, long length, DokanFileInfo info)
+        public DokanError UnlockFile(string filename, long offset, long length, DokanFileInfo info)
         {
             return ope_.UnlockFile(filename, offset, length, info);
         }
 
-        public int GetDiskFreeSpace(
-            ref ulong freeBytesAvailable,
-            ref ulong totalBytes,
-            ref ulong totalFreeBytes,
+        public DokanError GetDiskFreeSpace(
+            out long freeBytesAvailable,
+            out long totalBytes,
+            out long totalFreeBytes,
             DokanFileInfo info)
         {
-            return ope_.GetDiskFreeSpace(ref freeBytesAvailable, ref totalBytes, ref totalFreeBytes, info);
+            return ope_.GetDiskFreeSpace(out freeBytesAvailable, out totalBytes, out totalFreeBytes, info);
         }
 
-        public int Unmount(DokanFileInfo info)
+        public DokanError Unmount(DokanFileInfo info)
         {
             cache_.RemoveAllCache();
 
             return ope_.Unmount(info);
         }
 
+        public DokanError GetFileSecurity(string fileName, out FileSystemSecurity security, AccessControlSections sections, DokanFileInfo info)
+        {
+            return ope_.GetFileSecurity(fileName, out security, sections, info);
+        }
 
+        public DokanError SetFileSecurity(string fileName, FileSystemSecurity security, AccessControlSections sections, DokanFileInfo info)
+        {
+            return ope_.SetFileSecurity(fileName, security, sections, info);
+        }
+
+        public DokanError GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, DokanFileInfo info)
+        {
+            return ope_.GetVolumeInformation(out volumeLabel, out features, out fileSystemName, info);
+        }
     }
 }

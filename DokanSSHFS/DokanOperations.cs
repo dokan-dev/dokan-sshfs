@@ -6,8 +6,9 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Text;
 
-using Dokan;
+using DokanNet;
 using Tamir.SharpSsh.jsch;
+using System.Security.AccessControl;
 
 namespace DokanSSHFS
 {
@@ -78,7 +79,7 @@ namespace DokanSSHFS
         }
     }
 
-    class SSHFS : DokanOperations
+    class SSHFS : IDokanOperations
     {
         private JSch jsch_;
         private Session session_;
@@ -294,12 +295,13 @@ namespace DokanSSHFS
         }
 
 
-        public int CreateFile(
-            String filename,
-            FileAccess access,
+        public DokanError CreateFile(
+            string filename,
+            DokanNet.FileAccess access,
             FileShare share,
             FileMode mode,
             FileOptions options,
+            FileAttributes attributes,
             DokanFileInfo info)
         {
 
@@ -310,7 +312,7 @@ namespace DokanSSHFS
                 ChannelSftp channel = GetChannel();
 
                 if (CheckAltStream(path))
-                    return 0;
+                    return DokanError.ErrorSuccess;
 
                 switch (mode)
                 {
@@ -318,27 +320,27 @@ namespace DokanSSHFS
                         {
                             Debug("Open");
                             if (isExist(path, info))
-                                return 0;
+                                return DokanError.ErrorSuccess;
                             else
-                                return -DokanNet.ERROR_FILE_NOT_FOUND;
+                                return DokanError.ErrorFileNotFound;
                         }
                     case FileMode.CreateNew:
                         {
                             Debug("CreateNew");
                             if (isExist(path, info))
-                                return -DokanNet.ERROR_ALREADY_EXISTS;
+                                return DokanError.ErrorAlreadyExists;
 
                             Debug("CreateNew put 0 byte");
                             Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path);
                             stream.Close();
-                            return 0;
+                            return DokanError.ErrorSuccess;
                         }
                     case FileMode.Create:
                         {
                             Debug("Create put 0 byte");
                             Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path);
                             stream.Close();
-                            return 0;
+                            return DokanError.ErrorSuccess;
                         }
                     case FileMode.OpenOrCreate:
                         {
@@ -350,54 +352,54 @@ namespace DokanSSHFS
                                 Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path);
                                 stream.Close();
                             }
-                            return 0;
+                            return DokanError.ErrorSuccess;
                         }
                     case FileMode.Truncate:
                         {
                             Debug("Truncate");
 
                             if (!isExist(path, info))
-                                return -DokanNet.ERROR_FILE_NOT_FOUND;
+                                return DokanError.ErrorFileNotFound;
 
                             Debug("Truncate put 0 byte");
                             Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path);
                             stream.Close();
-                            return 0;
+                            return DokanError.ErrorSuccess;
                         }
                     case FileMode.Append:
                         {
                             Debug("Append");
 
                             if (isExist(path, info))
-                                return 0;
+                                return DokanError.ErrorSuccess;
 
                             Debug("Append put 0 byte");
                             Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path);
                             stream.Close();
-                            return 0;
+                            return DokanError.ErrorSuccess;
                         }
                     default:
                         Debug("Error unknown FileMode {0}", mode);
-                        return -1;
+                        return DokanError.ErrorError;
                 }
 
             }
             catch (SftpException e)
             {
                 Debug(e.ToString());
-                return -DokanNet.ERROR_FILE_NOT_FOUND;
+                return DokanError.ErrorFileNotFound;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -DokanNet.ERROR_FILE_NOT_FOUND;
+                return DokanError.ErrorFileNotFound;
             }
         }
 
-        public int OpenDirectory(
-            String filename,
+        public DokanError OpenDirectory(
+            string filename,
             DokanFileInfo info)
         {
             Debug("OpenDirectory {0}", filename);
@@ -407,29 +409,29 @@ namespace DokanSSHFS
                 SftpATTRS attr = GetChannel().stat(path);
                 if (attr.isDir())
                 {
-                    return 0;
+                    return DokanError.ErrorSuccess;
                 }
                 else
                 {
-                    return -DokanNet.ERROR_PATH_NOT_FOUND; // TODO: return not directory?
+                    return DokanError.ErrorPathNotFound; // TODO: return not directory?
                 }
             }
             catch (SftpException e)
             {
                 Debug(e.ToString());
-                return -DokanNet.ERROR_PATH_NOT_FOUND;
+                return DokanError.ErrorPathNotFound;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -DokanNet.ERROR_PATH_NOT_FOUND;
+                return DokanError.ErrorPathNotFound;
             }
         }
 
-        public int CreateDirectory(
-            String filename,
+        public DokanError CreateDirectory(
+            string filename,
             DokanFileInfo info)
         {
             Debug("CreateDirectory {0}", filename);
@@ -439,46 +441,47 @@ namespace DokanSSHFS
                 ChannelSftp channel = GetChannel();
 
                 channel.mkdir(path);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException e)
             {
                 Debug(e.ToString());
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1; // TODO: more appropriate error code
+                return DokanError.ErrorError; // TODO: more appropriate error code
             }
         }
 
-        public int Cleanup(
-            String filename,
+        public DokanError Cleanup(
+            string filename,
             DokanFileInfo info)
         {
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
-        public int CloseFile(
-            String filename,
+        public DokanError CloseFile(
+            string filename,
             DokanFileInfo info)
         {
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
 
-        public int ReadFile(
-            String filename,
+        public DokanError ReadFile(
+            string filename,
             Byte[] buffer,
-            ref uint readBytes,
+            out int readBytes,
             long offset,
             DokanFileInfo info)
         {
             string path = GetPath(filename);
 
+            readBytes = 0;
             if (path.Contains(":SSHFSProperty.Permission"))
             {
                 if (offset == 0)
@@ -487,20 +490,19 @@ namespace DokanSSHFS
                     path = tmp[0];
                     string str = ReadPermission(path);
                     byte[] bytes = System.Text.Encoding.ASCII.GetBytes(str);
-                    uint min = (uint)(buffer.Length < bytes.Length ? buffer.Length : bytes.Length);
+                    int min = (buffer.Length < bytes.Length ? buffer.Length : bytes.Length);
                     Array.Copy(bytes, buffer, min);
                     readBytes = min;
-                    return 0;
+                    return DokanError.ErrorSuccess;
                 }
                 else
                 {
-                    readBytes = 0;
-                    return 0;
+                    return DokanError.ErrorSuccess;
                 }
             }
 
             if (info.IsDirectory)
-                return -1;
+                return DokanError.ErrorError;
 
 
             Debug("ReadFile {0} bufferLen {1} Offset {2}", filename, buffer.Length, offset);
@@ -510,20 +512,20 @@ namespace DokanSSHFS
                 GetMonitor monitor = new GetMonitor(offset + buffer.Length);
                 GetStream stream = new GetStream(buffer);
                 channel.get(path, stream, monitor, ChannelSftp.RESUME, offset);
-                readBytes = (uint)stream.RecievedBytes;
+                readBytes = stream.RecievedBytes;
                 Debug("  ReadFile readBytes: {0}", readBytes);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
@@ -579,10 +581,10 @@ namespace DokanSSHFS
             return true;
         }
 
-        public int WriteFile(
-            String filename,
-            Byte[] buffer,
-            ref uint writtenBytes,
+        public DokanError WriteFile(
+            string filename,
+            byte[] buffer,
+            out int writtenBytes,
             long offset,
             DokanFileInfo info)
         {
@@ -590,6 +592,7 @@ namespace DokanSSHFS
             
             string path = GetPath(filename);
 
+            writtenBytes = 0;
             if (path.Contains(":SSHFSProperty.Permission"))
             {
                 if (offset == 0)
@@ -599,13 +602,12 @@ namespace DokanSSHFS
                     int permission = 0;
                     permission = Convert.ToInt32(System.Text.Encoding.ASCII.GetString(buffer), 8);
                     WritePermission(path, permission);
-                    writtenBytes = (uint)buffer.Length;
-                    return 0;
+                    writtenBytes = buffer.Length;
+                    return DokanError.ErrorSuccess;
                 }
                 else
                 {
-                    writtenBytes = 0;
-                    return 0;
+                    return DokanError.ErrorSuccess;
                 }
             }
 
@@ -616,32 +618,33 @@ namespace DokanSSHFS
                 Tamir.SharpSsh.java.io.OutputStream stream = channel.put(path, null, 3/*HACK: ‘¶Ý‚µ‚È‚¢ƒ‚[ƒh */, offset);
                 stream.Write(buffer, 0, buffer.Length);
                 stream.Close();
-                writtenBytes = (uint)buffer.Length;
-                return 0;
+                writtenBytes = buffer.Length;
+                return DokanError.ErrorSuccess;
             }
             catch (IOException)
             {
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (Exception e)
             {
                 Debug(e.ToString());
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int FlushFileBuffers(
+        public DokanError FlushFileBuffers(
             string filename,
             DokanFileInfo info)
         {
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
-        public int GetFileInformation(
-            String filename,
-            FileInformation fileinfo,
+        public DokanError GetFileInformation(
+            string filename,
+            out FileInformation fileinfo,
             DokanFileInfo info)
         {
+            fileinfo = new FileInformation();
             try
             {
                 string path = GetPath(filename);
@@ -661,28 +664,29 @@ namespace DokanSSHFS
                 fileinfo.LastWriteTime = org.AddSeconds(attr.getMTime());
                 fileinfo.Length = attr.getSize();
 
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int FindFiles(
-            String filename,
-            ArrayList files,
+        public DokanError FindFiles(
+            string filename,
+            out IList<FileInformation> files,
             DokanFileInfo info)
         {
             Debug("FindFiles {0}", filename);
 
+            files = new List<FileInformation>();
             try
             {
                 string path = GetPath(filename);
@@ -715,24 +719,24 @@ namespace DokanSSHFS
                     }
                     files.Add(fi);
                 }
-                return 0;
+                return DokanError.ErrorSuccess;
 
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int SetFileAttributes(
-            String filename,
+        public DokanError SetFileAttributes(
+            string filename,
             FileAttributes attr,
             DokanFileInfo info)
         {
@@ -747,23 +751,23 @@ namespace DokanSSHFS
                 Debug(" permissons {0} {1}", permissions, sattr.getPermissionsString());
                 sattr.setPERMISSIONS(permissions);
                 channel.setStat(path, sattr);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int SetFileTime(
-            String filename,
+        public DokanError SetFileTime(
+            string filename,
             DateTime? ctime,
             DateTime? atime,
             DateTime? mtime,
@@ -791,23 +795,23 @@ namespace DokanSSHFS
 
                 attr.setACMODTIME(uat, umt);
                 channel.setStat(path, attr);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int DeleteFile(
-            String filename,
+        public DokanError DeleteFile(
+            string filename,
             DokanFileInfo info)
         {
             Debug("DeleteFile {0}", filename);
@@ -816,23 +820,23 @@ namespace DokanSSHFS
                 string path = GetPath(filename);
                 ChannelSftp channel = GetChannel();
                 channel.rm(path);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int DeleteDirectory(
-            String filename,
+        public DokanError DeleteDirectory(
+            string filename,
             DokanFileInfo info)
         {
             Debug("DeleteDirectory {0}", filename);
@@ -841,24 +845,24 @@ namespace DokanSSHFS
                 string path = GetPath(filename);
                 ChannelSftp channel = GetChannel();
                 channel.rmdir(path);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int MoveFile(
-            String filename,
-            String newname,
+        public DokanError MoveFile(
+            string filename,
+            string newname,
             bool replace,
             DokanFileInfo info)
         {
@@ -869,23 +873,23 @@ namespace DokanSSHFS
                 string newPath = GetPath(newname);
                 ChannelSftp channel = GetChannel();
                 channel.rename(oldPath, newPath);
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int SetEndOfFile(
-            String filename,
+        public DokanError SetEndOfFile(
+            string filename,
             long length,
             DokanFileInfo info)
         {
@@ -898,22 +902,22 @@ namespace DokanSSHFS
                 attr.setSIZE(length);
                 channel.setStat(path, attr);
 
-                return 0;
+                return DokanError.ErrorSuccess;
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
         }
 
-        public int SetAllocationSize(string filename, long length, DokanFileInfo info)
+        public DokanError SetAllocationSize(string filename, long length, DokanFileInfo info)
         {
             try
             {
@@ -928,49 +932,49 @@ namespace DokanSSHFS
             }
             catch (SftpException)
             {
-                return -1;
+                return DokanError.ErrorError;
             }
             catch (Exception e)
             {
                 connectionError_ = true;
                 Debug(e.ToString());
                 Reconnect();
-                return -1;
+                return DokanError.ErrorError;
             }
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
-        public int LockFile(
-            String filename,
+        public DokanError LockFile(
+            string filename,
             long offset,
             long length,
             DokanFileInfo info)
         {
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
-        public int UnlockFile(
-            String filename,
+        public DokanError UnlockFile(
+            string filename,
             long offset,
             long length,
             DokanFileInfo info)
         {
-            return 0;
+            return DokanError.ErrorSuccess;
         }
 
-        public int GetDiskFreeSpace(
-                     ref ulong freeBytesAvailable,
-                     ref ulong totalBytes,
-                     ref ulong totalFreeBytes,
+        public DokanError GetDiskFreeSpace(
+                     out long freeBytesAvailable,
+                     out long totalBytes,
+                     out long totalFreeBytes,
                      DokanFileInfo info)
         {
-            freeBytesAvailable = 1024ul * 1024 * 1024 * 10;
-            totalBytes = 1024ul * 1024 * 1024 * 20;
-            totalFreeBytes = 1024ul * 1024 * 1024 * 10;
-            return 0;
+            freeBytesAvailable = 1024L * 1024 * 1024 * 10;
+            totalBytes = 1024L * 1024 * 1024 * 20;
+            totalFreeBytes = 1024L * 1024 * 1024 * 10;
+            return DokanError.ErrorSuccess;
         }
 
-        public int Unmount(
+        public DokanError Unmount(
             DokanFileInfo info)
         {
             try
@@ -994,7 +998,26 @@ namespace DokanSSHFS
             {
                 Debug(e.ToString());
             }
-            return 0;
+            return DokanError.ErrorSuccess;
+        }
+
+        public DokanError GetFileSecurity(string fileName, out FileSystemSecurity security, AccessControlSections sections, DokanFileInfo info)
+        {
+            security = null;
+            return DokanError.ErrorError;
+        }
+
+        public DokanError SetFileSecurity(string fileName, FileSystemSecurity security, AccessControlSections sections, DokanFileInfo info)
+        {
+            return DokanError.ErrorError;
+        }
+
+        public DokanError GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, DokanFileInfo info)
+        {
+            volumeLabel = String.Empty;
+            features = FileSystemFeatures.None;
+            fileSystemName = String.Empty;
+            return DokanError.ErrorError;
         }
     }
 }

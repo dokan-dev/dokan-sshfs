@@ -7,7 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
-using Dokan;
+using DokanNet;
 
 namespace DokanSSHFS
 {
@@ -15,6 +15,8 @@ namespace DokanSSHFS
     {
         private SSHFS sshfs;
         private DokanOptions opt;
+        private string mountPoint;
+        private int threadCount;
         private Settings settings = new Settings();
         private int selectedIndex = 0;
         private Thread dokan;
@@ -81,11 +83,11 @@ namespace DokanSSHFS
             sshfs = new SSHFS();
             opt = new DokanOptions();
 
-            opt.DebugMode = DokanSSHFS.DokanDebug;
-            opt.UseAltStream = true;
-            opt.MountPoint = "n:\\";
-            opt.ThreadCount = 0;
-            opt.UseKeepAlive = true;
+            if (DokanSSHFS.DokanDebug)
+                opt |= DokanOptions.DebugMode;
+            opt |= DokanOptions.AltStream | DokanOptions.KeepAlive;
+            mountPoint = "n:\\";
+            threadCount = 0;
 
             string message = "";
 
@@ -122,11 +124,11 @@ namespace DokanSSHFS
                 if (!('e' <= letter && letter <= 'z'))
                     message += "Drive letter is invalid\n";
 
-                opt.MountPoint = string.Format("{0}:\\", letter);
-                unmount.Text = "Unmount (" + opt.MountPoint + ")";
+                mountPoint = string.Format("{0}:\\", letter);
+                unmount.Text = "Unmount (" + mountPoint + ")";
             }
 
-            opt.ThreadCount = DokanSSHFS.DokanThread;
+            threadCount = DokanSSHFS.DokanThread;
 
             if (message.Length != 0)
             {
@@ -156,11 +158,11 @@ namespace DokanSSHFS
                 MountWorker worker = null;
                 if (disableCache.Checked)
                 {
-                    worker = new MountWorker(sshfs, opt);
+                    worker = new MountWorker(sshfs, opt, mountPoint, threadCount);
                 }
                 else
                 {
-                    worker = new MountWorker(new CacheOperations(sshfs), opt);
+                    worker = new MountWorker(new CacheOperations(sshfs), opt, mountPoint, threadCount);
                 }
 
                 dokan = new Thread(worker.Start);
@@ -182,17 +184,16 @@ namespace DokanSSHFS
         {
             if (opt != null && sshfs != null)
             {
-                Debug.WriteLine(string.Format("SSHFS Trying unmount : {0}", opt.MountPoint));
+                Debug.WriteLine(string.Format("SSHFS Trying unmount : {0}", mountPoint));
 
-                if (DokanNet.DokanRemoveMountPoint(opt.MountPoint) < 0)
+                try
                 {
-                    Debug.WriteLine("DokanReveMountPoint failed\n");
-                    // If DokanUmount failed, call sshfs.Unmount to disconnect.
-                    ;// sshfs.Unmount(null);
-                }
-                else
-                {
+                    Dokan.RemoveMountPoint(mountPoint);
                     Debug.WriteLine("DokanReveMountPoint success\n");
+                }
+                catch (DokanException ex)
+                {
+                    Debug.WriteLine("DokanRemoveMountPoint failed: " + ex.Message + "\n");
                 }
                 // This should be called from Dokan, but not called.
                 // Call here explicitly.
@@ -205,41 +206,29 @@ namespace DokanSSHFS
 
         class MountWorker
         {
-            private DokanOperations sshfs_;
+            private IDokanOperations sshfs_;
             private DokanOptions opt_;
-            
-            public MountWorker(DokanOperations sshfs, DokanOptions opt)
+            private string mountPoint_;
+            private int threadCount_;
+
+            public MountWorker(IDokanOperations sshfs, DokanOptions opt, string mountPoint, int threadCount)
             {
                 sshfs_ = sshfs;
                 opt_ = opt;
+                mountPoint_ = mountPoint;
+                threadCount_ = threadCount;
             }
 
             public void Start()
             {
                 System.IO.Directory.SetCurrentDirectory(Application.StartupPath);
-                int ret = DokanNet.DokanMain(opt_, sshfs_);
-                if (ret < 0)
+                try
                 {
-                    string msg = "Dokan Error";
-                    switch (ret)
-                    {
-                        case DokanNet.DOKAN_ERROR:
-                            msg = "Dokan Error";
-                            break;
-                        case DokanNet.DOKAN_DRIVE_LETTER_ERROR:
-                            msg = "Dokan drive letter error";
-                            break;
-                        case DokanNet.DOKAN_DRIVER_INSTALL_ERROR:
-                            msg = "Dokan driver install error";
-                            break;
-                        case DokanNet.DOKAN_MOUNT_ERROR:
-                            msg = "Dokan drive letter assign error";
-                            break;
-                        case DokanNet.DOKAN_START_ERROR:
-                            msg = "Dokan driver error ,please reboot";
-                            break;
-                    }
-                    MessageBox.Show(msg, "Error");
+                    sshfs_.Mount(mountPoint_, opt_, threadCount_);
+                }
+                catch (DokanException ex)
+                {
+                    MessageBox.Show(ex.Message, "Error");
                     Application.Exit();
                 }
                 Debug.WriteLine("DokanNet.Main end");
