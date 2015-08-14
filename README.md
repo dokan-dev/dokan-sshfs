@@ -9,7 +9,7 @@ which is a BSD-like license. See the 'license.txt' file for details.
 
 ## Environment
 This program requires following programs.
-- Dokan library (http://dokan-dev.net/en)
+- Dokan library (https://github.com/dokan-dev/dokany)
 - Dokan.NET (including)
 - SharpSSH (including)
 - Microsoft .NET Framework 4.0
@@ -23,7 +23,7 @@ I changed SharpSSH to deal with multibyte characters.
 Just run DokanSSHFS.exe
 DokanSSHFS supports only OpenSSH key format.
 
-see also http://dokan-dev.net/en/docs/
+see also https://github.com/dokan-dev/dokany/wiki
 
 ## Uninstallation
 You can use Add/Remove programs in Control Panel to uninstall Dokan.
