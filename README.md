@@ -19,8 +19,14 @@ This program requires following programs.
 SharpSSH http://www.tamirgal.com/home/dev.aspx?Item=SharpSsh
 I changed SharpSSH to deal with multibyte characters.
 
+## How to build
+ - Open the directory: `dokan-sshfs\DokanSSHFS`
+ - Open `DokanSSHFS.sln` in visual studio
+ - Click build and this time choose `Build Solution`
+ - After it's done, you can find the executable in `dokan-sshfs\DokanSSHFS\bin\x86\Release`
+
 ## How to use
-Just run DokanSSHFS.exe
+Just run DokanSSHFS.exe in the build folder.
 DokanSSHFS supports only OpenSSH key format.
 
 see also https://github.com/dokan-dev/dokany/wiki
