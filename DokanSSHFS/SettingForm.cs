@@ -85,7 +85,7 @@ namespace DokanSSHFS
 
             if (DokanSSHFS.DokanDebug)
                 opt |= DokanOptions.DebugMode;
-            opt |= DokanOptions.AltStream | DokanOptions.KeepAlive;
+            opt |= DokanOptions.AltStream; // DokanOptions.KeepAlive always enabled.
             mountPoint = "n:\\";
             threadCount = 0;
 
@@ -197,7 +197,7 @@ namespace DokanSSHFS
                 }
                 // This should be called from Dokan, but not called.
                 // Call here explicitly.
-                sshfs.Unmount(null);
+                sshfs.Unmounted(null);
             }
             unmount.Visible = false;
             mount.Visible = true;
