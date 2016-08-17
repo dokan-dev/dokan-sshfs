@@ -74,16 +74,20 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DokanNet, Version=1.1.0.0, Culture=neutral, PublicKeyToken=3709aaa01df28a9e, processorArchitecture=MSIL">
-      <HintPath>packages\DokanNet.1.1.0-rc3\lib\net40\DokanNet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="DiffieHellman, Version=0.0.0.0, Culture=neutral">
       <HintPath>packages\DiffieHellman.1.0.0\lib\net40\DiffieHellman.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="DokanNet, Version=1.1.0.0, Culture=neutral, PublicKeyToken=cef3dedf553bda55, processorArchitecture=MSIL">
+      <HintPath>packages\DokanNet.1.1.0-rc4\lib\net40\DokanNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Org.Mentalis.Security, Version=1.0.13.715, Culture=neutral">
       <HintPath>packages\Org.Mentalis.Security.1.0.0\lib\net40\Org.Mentalis.Security.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="StringInterpolationBridge, Version=0.9.1.0, Culture=neutral, PublicKeyToken=031b5b3c3dfa34fb, processorArchitecture=MSIL">
+      <HintPath>packages\DokanNet.1.1.0-rc4\lib\net40\StringInterpolationBridge.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

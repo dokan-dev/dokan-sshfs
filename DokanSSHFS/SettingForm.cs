@@ -182,7 +182,7 @@ namespace DokanSSHFS
 
         private void Unmount()
         {
-            if (opt != null && sshfs != null)
+            if (sshfs != null)
             {
                 Debug.WriteLine(string.Format("SSHFS Trying unmount : {0}", mountPoint));
 
