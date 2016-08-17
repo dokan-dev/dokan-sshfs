@@ -78,6 +78,14 @@
       <HintPath>packages\DokanNet.1.1.0-rc3\lib\net40\DokanNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="DiffieHellman, Version=0.0.0.0, Culture=neutral">
+      <HintPath>packages\DiffieHellman.1.0.0\lib\net40\DiffieHellman.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Org.Mentalis.Security, Version=1.0.13.715, Culture=neutral">
+      <HintPath>packages\Org.Mentalis.Security.1.0.0\lib\net40\Org.Mentalis.Security.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
