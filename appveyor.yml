@@ -1,0 +1,10 @@
+version: 1.0.0-{build}
+configuration:
+- Release
+os: Visual Studio 2015
+build:
+  project: .\DokanSSHFS\DokanSSHFS.sln
+  verbosity: minimal
+on_success:
+    - ps:  7z a dokan-sshfs.zip .\DokanSSHFS\bin\Release
+    - ps:  Push-AppveyorArtifact dokan-sshfs.zip
