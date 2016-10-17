@@ -1,4 +1,5 @@
 # Dokan SSHFS
+[![Build status](https://ci.appveyor.com/api/projects/status/yjj6m84g69l1mh06?svg=true)](https://ci.appveyor.com/project/Liryna/dokan-sshfs)
 
 ## What is Dokan SSHFS
 Dokan SSHFS is a program that mounts remote file systems using SSH.
@@ -19,11 +20,14 @@ This program requires following programs.
 SharpSSH http://www.tamirgal.com/home/dev.aspx?Item=SharpSsh
 I changed SharpSSH to deal with multibyte characters.
 
+## Download
+You can download last version on our CI appveyor [here](https://ci.appveyor.com/api/projects/liryna/dokan-sshfs/artifacts/dokan-sshfs.zip). Don't forget to install dokany dependency (see Environment) !
+
 ## How to build
  - Open the directory: `dokan-sshfs\DokanSSHFS`
  - Open `DokanSSHFS.sln` in visual studio
  - Click build and this time choose `Build Solution`
- - After it's done, you can find the executable in `dokan-sshfs\DokanSSHFS\bin\x86\Release`
+ - After it's done, you can find the executable in `dokan-sshfs\DokanSSHFS\bin\Release`
 
 ## How to use
 Just run DokanSSHFS.exe in the build folder.
