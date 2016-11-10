@@ -10,7 +10,7 @@ which is a BSD-like license. See the 'license.txt' file for details.
 
 ## Environment
 This program requires following programs.
-- Dokan library (https://github.com/dokan-dev/dokany)
+- Dokan library version 1.0.1 (https://github.com/dokan-dev/dokany/releases/tag/v1.0.1)
 - Dokan.NET (including)
 - SharpSSH (including)
 - Microsoft .NET Framework 4.0
