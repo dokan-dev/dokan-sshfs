@@ -56,6 +56,7 @@ namespace DokanSSHFS
                             threads = uint.Parse(args[++i]);
                             break;
                     }
+                    continue;
                 }
 
                 if (args[i] == "-x")
