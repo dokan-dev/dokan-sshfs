@@ -29,8 +29,8 @@ namespace DokanSSHFS
             for (int i = 0; i < args.Length; ++i)
             {
                 if ((args[i][0] == '-' || args[i][0] == '/')
-                    && args[i].Length > 1 // -‚ÌŒã‚É•¶Žš‚ª‚ ‚é
-                    && i + i < args.Length) // ŽŸ‚Ì—v‘f‚ª‚ ‚é
+                    && args[i].Length > 1 // -ã®å¾Œã«æ–‡å­—ãŒã‚ã‚‹
+                    && i + 1 < args.Length) // æ¬¡ã®è¦ç´ ãŒã‚ã‚‹
                 {
                     switch (args[i][1])
                     {
