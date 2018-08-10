@@ -1038,11 +1038,12 @@ namespace DokanSSHFS
             return NtStatus.Error;
         }
 
-        public NtStatus GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, DokanFileInfo info)
+        public NtStatus GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, out uint maximumComponentLength, DokanFileInfo info)
         {
             volumeLabel = String.Empty;
             features = FileSystemFeatures.None;
             fileSystemName = String.Empty;
+            maximumComponentLength = 0;
             return NtStatus.Error;
         }
     }

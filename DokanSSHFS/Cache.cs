@@ -388,9 +388,9 @@ namespace DokanSSHFS
             return ope_.SetFileSecurity(fileName, security, sections, info);
         }
 
-        public NtStatus GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, DokanFileInfo info)
+        public NtStatus GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features, out string fileSystemName, out uint maximumComponentLength, DokanFileInfo info)
         {
-            return ope_.GetVolumeInformation(out volumeLabel, out features, out fileSystemName, info);
+            return ope_.GetVolumeInformation(out volumeLabel, out features, out fileSystemName, out maximumComponentLength, info);
         }
     }
 }
