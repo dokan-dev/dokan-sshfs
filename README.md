@@ -17,9 +17,6 @@ This program requires following programs.
 - Microsoft Visual C++ 2005 SP1 Redistributable Package
 (http://www.microsoft.com/downloads/details.aspx?FamilyID=200b2fd9-ae1a-4a14-984d-389c36f85647)
 
-SharpSSH http://www.tamirgal.com/home/dev.aspx?Item=SharpSsh
-I changed SharpSSH to deal with multibyte characters.
-
 ## Download
 You can download last version on our CI appveyor [here](https://ci.appveyor.com/api/projects/liryna/dokan-sshfs/artifacts/dokan-sshfs.zip). Don't forget to install dokany dependency (see Environment) !
 
