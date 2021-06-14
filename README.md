@@ -1,6 +1,9 @@
 # Dokan SSHFS
 [![Build status](https://ci.appveyor.com/api/projects/status/yjj6m84g69l1mh06?svg=true)](https://ci.appveyor.com/project/Liryna/dokan-sshfs)
 
+## The project is looking for a maintainer
+Please reach out to @Liryna if you would be interested to update and maintain the project!
+
 ## What is Dokan SSHFS
 Dokan SSHFS is a program that mounts remote file systems using SSH.
 
